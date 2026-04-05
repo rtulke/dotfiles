@@ -1,7 +1,6 @@
 # dotfiles — Robert Tulke
 
 Persönliche Shell-Konfiguration für **bash** und **zsh**, optimiert für den Einsatz auf **macOS und Linux** (Debian).  
-Enthält eine umfangreiche Funktionsbibliothek für Entwicklung, DevOps, Ansible, Docker, tmux und Raspberry Pi.
 
 ---
 
@@ -17,6 +16,10 @@ Enthält eine umfangreiche Funktionsbibliothek für Entwicklung, DevOps, Ansible
 ## Installation
 
 ```bash
+# git clone
+mkdir ~/dev/
+git clone https://github.com/rtulke/dotfiles.git
+
 # Symlinks im Home-Verzeichnis setzen
 ln -sf ~/dev/dotfiles/.bashrc ~/.bashrc
 ln -sf ~/dev/dotfiles/.zshrc  ~/.zshrc
