@@ -1,39 +1,61 @@
 # ╔═════════════════════════════════════════════╗
-#  .bashrc — Robert Tulke
+#  .zshrc — Robert Tulke
 #  Sections:
-#    1. History
-#    2. Aliases
-#    3. Navigation & Bookmarks
-#    4. Dateien & Archive
-#    5. Suche & Text
-#    6. Git
-#    7. Docker
-#    8. Netzwerk & System
-#    9. Prozesse
-#   10. Entwicklung (Python, Node, Docs)
-#   11. tmux
-#   12. Ansible
-#   13. SSH & Raspberry Pi
-#   14. Utilities
+#    1. Zsh Options & Completion
+#    2. History
+#    3. Aliases
+#    4. Navigation & Bookmarks
+#    5. Dateien & Archive
+#    6. Suche & Text
+#    7. Git
+#    8. Docker
+#    9. Netzwerk & System
+#   10. Prozesse
+#   11. Entwicklung (Python, Node, Docs)
+#   12. tmux
+#   13. Ansible
+#   14. SSH & Raspberry Pi
+#   15. Utilities
 # ╚═════════════════════════════════════════════╝
 
 
 # ─────────────────────────────────────────────
-#  1. History
+#  1. Zsh Options & Completion
 # ─────────────────────────────────────────────
+autoload -Uz compinit && compinit   # Tab-Completion aktivieren
+autoload -Uz colors && colors       # Farb-Support
+
+setopt AUTO_CD                      # Verzeichnisname = cd
+setopt CORRECT                      # Rechtschreibkorrektur für Befehle
+setopt GLOB_DOTS                    # Dotfiles in Glob-Patterns einschließen
+setopt NO_CASE_GLOB                 # Case-insensitive Globbing
+setopt INTERACTIVE_COMMENTS         # # Kommentare in interaktiver Shell erlaubt
+
+# Completion: Menü + Farben + Case-insensitiv
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+
+
+# ─────────────────────────────────────────────
+#  2. History
+# ─────────────────────────────────────────────
+HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000
-HISTFILESIZE=20000
-HISTCONTROL=ignoreboth          # ignoredups + ignorespace
-shopt -s histappend             # append statt überschreiben
-PROMPT_COMMAND="history -a"     # nach jedem Befehl wegschreiben
+SAVEHIST=20000
+
+setopt HIST_IGNORE_ALL_DUPS         # Duplikate nicht speichern
+setopt HIST_IGNORE_SPACE            # Befehle mit führendem Space nicht speichern
+setopt INC_APPEND_HISTORY           # Sofort wegschreiben (nicht beim Shell-Exit)
+setopt SHARE_HISTORY                # History über alle Zsh-Sessions teilen
 
 
 # ─────────────────────────────────────────────
-#  2. Aliases
+#  3. Aliases
 # ─────────────────────────────────────────────
 alias ll='ls -lAh'
 alias home='cd ~'
-alias update='sudo apt update && sudo apt upgrade -y'
+alias update='sudo softwareupdate -i -a'
 
 # Python-Statistiken (exkl. .venv)
 alias getpyline="find . -path './.venv' -prune -o -name '*.py' -print0 | xargs -0 wc -l"
@@ -44,7 +66,7 @@ alias mdless='pandoc -s -f markdown -t man *.md | groff -T utf8 -man | less'
 
 
 # ─────────────────────────────────────────────
-#  3. Navigation & Bookmarks
+#  4. Navigation & Bookmarks
 # ─────────────────────────────────────────────
 
 # mkdir + cd in einem Schritt
@@ -112,7 +134,7 @@ bdel() {
 
 
 # ─────────────────────────────────────────────
-#  4. Dateien & Archive
+#  5. Dateien & Archive
 # ─────────────────────────────────────────────
 
 # Universeller Entpacker: extract foo.tar.gz
@@ -158,7 +180,7 @@ trash() {
 
 
 # ─────────────────────────────────────────────
-#  5. Suche & Text
+#  6. Suche & Text
 # ─────────────────────────────────────────────
 
 # Rekursive Case-Insensitive Suche mit Kontext
@@ -188,7 +210,7 @@ weather() {
 
 
 # ─────────────────────────────────────────────
-#  6. Git
+#  7. Git
 # ─────────────────────────────────────────────
 
 # Globale Git-Standardkonfiguration einrichten
@@ -199,9 +221,9 @@ git-setup() {
     fi
 
     echo "── Git Setup ──────────────────────────────"
-    read -rp "Benutzername : " _git_name
-    read -rp "E-Mail       : " _git_email
-    read -rp "Editor       [vim]: " _git_editor
+    read -r "_git_name?Benutzername : "
+    read -r "_git_email?E-Mail       : "
+    read -r "_git_editor?Editor       [vim]: "
     _git_editor="${_git_editor:-vim}"
 
     if [[ -z "$_git_name" || -z "$_git_email" ]]; then
@@ -296,7 +318,7 @@ gundo() {
 
 
 # ─────────────────────────────────────────────
-#  7. Docker
+#  8. Docker
 # ─────────────────────────────────────────────
 
 # Shell in laufenden Container: dsh myapp [bash]
@@ -339,7 +361,7 @@ dcdn() {
 
 
 # ─────────────────────────────────────────────
-#  8. Netzwerk & System
+#  9. Netzwerk & System
 # ─────────────────────────────────────────────
 
 # Externe IP
@@ -425,7 +447,7 @@ disk() {
 
 
 # ─────────────────────────────────────────────
-#  9. Prozesse
+#  10. Prozesse
 # ─────────────────────────────────────────────
 
 # Prozess nach Name suchen: psg nginx
@@ -457,7 +479,7 @@ topmem() {
 
 
 # ─────────────────────────────────────────────
-#  10. Entwicklung
+#  11. Entwicklung
 # ─────────────────────────────────────────────
 
 # Python venv erstellen und aktivieren: venv [name]
@@ -515,7 +537,7 @@ md2man() {
     local target="${1:-.}"
     if [[ -d "$target" ]]; then
         local files=("$target"/*.md)
-        if [[ "${files[0]}" == "$target"/*.md ]]; then
+        if [[ "${files[1]}" == "$target"/*.md ]]; then
             echo "md2man: keine .md-Dateien gefunden in: $target" >&2
             return 1
         fi
@@ -530,7 +552,7 @@ md2man() {
 
 
 # ─────────────────────────────────────────────
-#  11. tmux
+#  12. tmux
 # ─────────────────────────────────────────────
 
 # Neue tmux-Session erstellen: tns projektname
@@ -543,7 +565,6 @@ ta() {
     if [[ -n "$1" ]]; then
         tmux attach-session -t "$1"
     else
-        # Letzte Session nehmen falls kein Name angegeben
         tmux attach-session 2>/dev/null || echo "Keine tmux-Session vorhanden. Neue Session: tns [name]"
     fi
 }
@@ -575,7 +596,7 @@ tnw() {
 
 
 # ─────────────────────────────────────────────
-#  12. Ansible
+#  13. Ansible
 # ─────────────────────────────────────────────
 
 # Playbook ausführen: ap site.yml [-i inventory]
@@ -619,7 +640,7 @@ arun() {
 
 
 # ─────────────────────────────────────────────
-#  13. SSH & Raspberry Pi
+#  14. SSH & Raspberry Pi
 # ─────────────────────────────────────────────
 
 # SSH-Public-Key auf Remote-Host kopieren: sshcopy user@host
@@ -667,7 +688,7 @@ rpi() {
 
 
 # ─────────────────────────────────────────────
-#  14. Utilities
+#  15. Utilities
 # ─────────────────────────────────────────────
 
 # Befehl n-mal wiederholen: retry [max] <cmd>
@@ -730,8 +751,8 @@ note-clear() {
 
 # Ja/Nein-Abfrage: confirm "Wirklich löschen?" && rm file
 confirm() {
-    read -rp "$* [j/N] " antwort
-    [[ "${antwort,,}" == "j" ]]
+    read -r "antwort?$* [j/N] "
+    [[ "${antwort:l}" == "j" ]]
 }
 
 # Zufälliges Passwort generieren: mkpass [länge]
@@ -771,7 +792,7 @@ path() {
     echo "$PATH" | tr ':' '\n' | nl
 }
 
-# .bashrc neu laden
+# .zshrc neu laden
 reload() {
-    source ~/.bashrc && echo ".bashrc neu geladen."
+    source ~/.zshrc && echo ".zshrc neu geladen."
 }
