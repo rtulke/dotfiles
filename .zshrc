@@ -483,6 +483,7 @@ topmem() {
 # ─────────────────────────────────────────────
 
 # Python venv erstellen und aktivieren: venv [name]
+unalias venv 2>/dev/null
 venv() {
     local name="${1:-.venv}"
     if [[ ! -d "$name" ]]; then
