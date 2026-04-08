@@ -142,7 +142,8 @@ bj logs           # springt zu /var/log/nginx
 |---|---|
 | `sysinfo` | Kompakte Systemübersicht (Host, OS, CPU, RAM, Disk) |
 | `disk` | Festplattennutzung ohne tmpfs/overlay-Rauschen |
-| `myip` | Externe IP-Adresse |
+| `myip` | Externe IP-Adresse (api.ipify.org) |
+| `netip` | Externe IP mit Fallback über 5 Anbieter (zeigt welcher antwortet) |
 | `localip` | Alle lokalen IP-Adressen |
 | `openports` | Alle offenen Ports anzeigen |
 | `port <nr>` | Prozess auf Port anzeigen |

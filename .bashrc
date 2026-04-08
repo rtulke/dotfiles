@@ -342,9 +342,30 @@ dcdn() {
 #  8. Netzwerk & System
 # ─────────────────────────────────────────────
 
-# Externe IP
+# Externe IP (einzelner Anbieter)
 myip() {
     curl -s https://api.ipify.org && echo
+}
+
+# Externe IP mit Fallback über mehrere Anbieter
+netip() {
+    local providers=(
+        "https://api.ipify.org"
+        "https://icanhazip.com"
+        "https://ifconfig.me"
+        "https://ipecho.net/plain"
+        "https://api4.my-ip.io/ip"
+    )
+    for url in "${providers[@]}"; do
+        local ip
+        ip=$(curl -s --max-time 3 "$url" 2>/dev/null | tr -d '[:space:]')
+        if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "$ip  (via $url)"
+            return
+        fi
+    done
+    echo "Keine externe IP ermittelbar – alle Anbieter nicht erreichbar." >&2
+    return 1
 }
 
 # Lokale IPs
