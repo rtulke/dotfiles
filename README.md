@@ -48,6 +48,7 @@ Beide Dateien sind weitgehend identisch. Folgende Stellen unterscheiden sich bew
 | `git-setup` read | `read -rp "prompt" var` | `read -r "var?prompt"` |
 | `confirm` lowercase | `${var,,}` | `${var:l}` |
 | History | `shopt`, `HISTFILESIZE` | `setopt`, `SAVEHIST` |
+| `ls` Farben | `--color=auto` + `dircolors` (GNU) | `-G` + `CLICOLOR`/`LSCOLORS` (BSD) |
 
 Funktionen die Plattform-Unterschiede intern behandeln (kein manuelles Eingreifen nötig):  
 `copy`, `paste`, `sysinfo`, `disk`, `openports`, `epoch2date`, `git-setup` (credential.helper)
@@ -275,7 +276,8 @@ epoch2date 1700000000
 
 | Alias | Beschreibung |
 |---|---|
-| `ll` | `ls -lAh` |
+| `ls` | Farbige Ausgabe (`-G` auf macOS, `--color=auto` auf Linux) |
+| `ll` | `ls -lAh` mit Farbe |
 | `home` | `cd ~` |
 | `update` | System-Updates (apt auf Linux, softwareupdate auf macOS) |
 | `getpyline` | Zeilenzahl aller `.py`-Dateien (exkl. `.venv`) |

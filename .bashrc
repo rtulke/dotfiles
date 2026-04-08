@@ -31,7 +31,13 @@ PROMPT_COMMAND="history -a"     # nach jedem Befehl wegschreiben
 # ─────────────────────────────────────────────
 #  2. Aliases
 # ─────────────────────────────────────────────
-alias ll='ls -lAh'
+
+# ls Farben (GNU ls)
+if command -v dircolors &>/dev/null; then
+    eval "$(dircolors -b)"
+fi
+alias ls='ls --color=auto'
+alias ll='ls -lAh --color=auto'
 alias home='cd ~'
 alias update='sudo apt update && sudo apt upgrade -y'
 
@@ -198,11 +204,26 @@ git-setup() {
         return 1
     fi
 
+    # Bestehende Werte auslesen
+    local _cur_name _cur_email _cur_editor
+    _cur_name="$(git config --global user.name 2>/dev/null)"
+    _cur_email="$(git config --global user.email 2>/dev/null)"
+    _cur_editor="$(git config --global core.editor 2>/dev/null)"
+    _cur_editor="${_cur_editor:-vim}"
+
     echo "── Git Setup ──────────────────────────────"
-    read -rp "Benutzername : " _git_name
-    read -rp "E-Mail       : " _git_email
-    read -rp "Editor       [vim]: " _git_editor
-    _git_editor="${_git_editor:-vim}"
+    echo "  Enter = bestehenden Wert übernehmen"
+    echo ""
+
+    local _git_name _git_email _git_editor
+    read -rp "Benutzername [${_cur_name}]: " _git_name
+    _git_name="${_git_name:-$_cur_name}"
+
+    read -rp "E-Mail       [${_cur_email}]: " _git_email
+    _git_email="${_git_email:-$_cur_email}"
+
+    read -rp "Editor       [${_cur_editor}]: " _git_editor
+    _git_editor="${_git_editor:-$_cur_editor}"
 
     if [[ -z "$_git_name" || -z "$_git_email" ]]; then
         echo "Abgebrochen: Name und E-Mail dürfen nicht leer sein." >&2

@@ -53,7 +53,14 @@ setopt SHARE_HISTORY                # History über alle Zsh-Sessions teilen
 # ─────────────────────────────────────────────
 #  3. Aliases
 # ─────────────────────────────────────────────
-alias ll='ls -lAh'
+
+# ls Farben (macOS BSD ls)
+export CLICOLOR=1
+export LSCOLORS="ExGxFxdxCxegedabagacad"
+# LS_COLORS für zsh-Completion (GNU-Format)
+export LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.tgz=01;31:*.zip=01;31:*.gz=01;31:*.bz2=01;31:*.xz=01;31:*.jpg=01;35:*.png=01;35:*.gif=01;35:*.py=00;33:*.sh=00;32:*.md=00;36"
+alias ls='ls -G'
+alias ll='ls -lAhG'
 alias home='cd ~'
 alias update='sudo softwareupdate -i -a'
 
@@ -220,11 +227,26 @@ git-setup() {
         return 1
     fi
 
+    # Bestehende Werte auslesen
+    local _cur_name _cur_email _cur_editor
+    _cur_name="$(git config --global user.name 2>/dev/null)"
+    _cur_email="$(git config --global user.email 2>/dev/null)"
+    _cur_editor="$(git config --global core.editor 2>/dev/null)"
+    _cur_editor="${_cur_editor:-vim}"
+
     echo "── Git Setup ──────────────────────────────"
-    read -r "_git_name?Benutzername : "
-    read -r "_git_email?E-Mail       : "
-    read -r "_git_editor?Editor       [vim]: "
-    _git_editor="${_git_editor:-vim}"
+    echo "  Enter = bestehenden Wert übernehmen"
+    echo ""
+
+    local _git_name _git_email _git_editor
+    read -r "_git_name?Benutzername [${_cur_name}]: "
+    _git_name="${_git_name:-$_cur_name}"
+
+    read -r "_git_email?E-Mail       [${_cur_email}]: "
+    _git_email="${_git_email:-$_cur_email}"
+
+    read -r "_git_editor?Editor       [${_cur_editor}]: "
+    _git_editor="${_git_editor:-$_cur_editor}"
 
     if [[ -z "$_git_name" || -z "$_git_email" ]]; then
         echo "Abgebrochen: Name und E-Mail dürfen nicht leer sein." >&2
