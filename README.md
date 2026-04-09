@@ -28,10 +28,10 @@ ln -sf ~/dev/dotfiles/.zshrc  ~/.zshrc
 source ~/.bashrc   # oder: source ~/.zshrc
 ```
 
-Nach dem Laden steht `git-setup` zur Verfügung, um die globale Git-Konfiguration einzurichten:
+Nach dem Laden steht `setup-git` zur Verfügung, um die globale Git-Konfiguration einzurichten:
 
 ```bash
-git-setup
+setup-git
 ```
 
 ---
@@ -45,13 +45,16 @@ Beide Dateien sind weitgehend identisch. Folgende Stellen unterscheiden sich bew
 | `update` | `apt update && apt upgrade` | `softwareupdate -i -a` |
 | `copy` / `paste` | `xclip` / `xsel` | `pbcopy` / `pbpaste` |
 | `sysinfo` RAM | `free -h` | `vm_stat` |
-| `git-setup` read | `read -rp "prompt" var` | `read -r "var?prompt"` |
+| `setup-git` read | `read -rp "prompt" var` | `read -r "var?prompt"` |
 | `confirm` lowercase | `${var,,}` | `${var:l}` |
 | History | `shopt`, `HISTFILESIZE` | `setopt`, `SAVEHIST` |
 | `ls` Farben | `--color=auto` + `dircolors` (GNU) | `-G` + `CLICOLOR`/`LSCOLORS` (BSD) |
+| `log` | `journalctl` (systemd) | Meldung: nicht verfügbar |
+
+**Nur `.bashrc`:** Interactive-Shell-Guard, farbiger PS1-Prompt, `checkwinsize`, `TERM=xterm-256color`, Bash Completion (`/usr/share/bash-completion`)
 
 Funktionen die Plattform-Unterschiede intern behandeln (kein manuelles Eingreifen nötig):  
-`copy`, `paste`, `sysinfo`, `disk`, `openports`, `epoch2date`, `git-setup` (credential.helper)
+`copy`, `paste`, `sysinfo`, `cpuinfo`, `disk`, `openports`, `epoch2date`, `log`, `setup-git` (credential.helper)
 
 ---
 
@@ -110,7 +113,7 @@ bj logs           # springt zu /var/log/nginx
 
 | Funktion | Beschreibung |
 |---|---|
-| `git-setup` | Globale Git-Konfiguration interaktiv einrichten |
+| `setup-git` | Globale Git-Konfiguration interaktiv einrichten |
 | `gs` | Kompakter Status (`git status -sb`) |
 | `gl [n]` | Grafischer Log, Standard: letzte 20 Commits |
 | `gbr` | Alle Branches sortiert nach letztem Commit |
@@ -119,7 +122,7 @@ bj logs           # springt zu /var/log/nginx
 | `gundo` | Letzten Commit rückgängig machen (Änderungen bleiben) |
 | `git-clean-branches` | Alle gemergten Branches löschen (außer main/master/dev) |
 
-`git-setup` konfiguriert u.a.: `pull.rebase=true`, `diff.algorithm=histogram`, `merge.conflictstyle=zdiff3`, fsck-Sicherheitseinstellungen, und Git-Aliases (`co`, `br`, `ci`, `st`, `unstage`, `last`).
+`setup-git` konfiguriert u.a.: `pull.rebase=true`, `diff.algorithm=histogram`, `merge.conflictstyle=zdiff3`, fsck-Sicherheitseinstellungen, und Git-Aliases (`co`, `br`, `ci`, `st`, `unstage`, `last`).
 
 ---
 
@@ -142,6 +145,7 @@ bj logs           # springt zu /var/log/nginx
 | Funktion | Beschreibung |
 |---|---|
 | `sysinfo` | Kompakte Systemübersicht (Host, OS, CPU, RAM, Disk) |
+| `cpuinfo` | Detaillierte CPU-Infos: Modell, Kerne, Threads, Frequenz, Cache (Linux inkl. RPi & macOS) |
 | `disk` | Festplattennutzung ohne tmpfs/overlay-Rauschen |
 | `myip` | Externe IP-Adresse (api.ipify.org) |
 | `netip` | Externe IP mit Fallback über 5 Anbieter (zeigt welcher antwortet) |
@@ -179,6 +183,13 @@ bj logs           # springt zu /var/log/nginx
 | `jsonp [json]` | JSON pretty-print (Argument oder stdin) |
 | `cert <domain>` | TLS-Zertifikat einer Domain prüfen |
 | `md2man [pfad]` | Markdown-Datei(en) als Man-Page rendern (benötigt pandoc) |
+| `setup-vim` | Vim prüfen, Colorschemes laden und `~/.vimrc` anlegen |
+
+`setup-vim` lädt folgende Colorschemes nach `~/.vim/colors/`:
+- **distinguished** — aktives Colorscheme in der `~/.vimrc` ([Lokaltog/vim-distinguished](https://github.com/Lokaltog/vim-distinguished))
+- **solarized** — optional, `g:solarized_termcolors=256` ist bereits gesetzt ([altercation/vim-colors-solarized](https://github.com/altercation/vim-colors-solarized))
+
+Falls eine bestehende `~/.vimrc` gefunden wird, wird vor dem Überschreiben ein Backup angelegt (`~/.vimrc.bak.DATUM`).
 
 ---
 
@@ -272,17 +283,28 @@ epoch2date 1700000000
 
 ---
 
-## Aliases
+## Aliases & Shell-Funktionen
 
-| Alias | Beschreibung |
+| Alias / Funktion | Beschreibung |
 |---|---|
 | `ls` | Farbige Ausgabe (`-G` auf macOS, `--color=auto` auf Linux) |
 | `ll` | `ls -lAh` mit Farbe |
+| `grep` / `fgrep` / `egrep` | Farbige Trefferausgabe (`--color=auto`) |
 | `home` | `cd ~` |
+| `..` | `cd ..` |
+| `....` | `cd ../..` |
+| `......` | `cd ../../..` |
 | `update` | System-Updates (apt auf Linux, softwareupdate auf macOS) |
 | `getpyline` | Zeilenzahl aller `.py`-Dateien (exkl. `.venv`) |
 | `getpychars` | Zeichenzahl aller `.py`-Dateien (exkl. `.venv`) |
 | `mdless` | Markdown als Man-Page rendern (benötigt pandoc) |
+| `log [service]` | Systemd-Journal anzeigen: letzte 50 Zeilen, optional gefiltert nach Service |
+
+```bash
+log              # letzte 50 Zeilen des Journals
+log nginx        # Logs des nginx-Service
+log ssh          # Logs des SSH-Daemon
+```
 
 ---
 

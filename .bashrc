@@ -1,7 +1,14 @@
+# Nur in interaktiven Shells ausführen
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+
 # ╔═════════════════════════════════════════════╗
 #  .bashrc — Robert Tulke
 #  Sections:
-#    1. History
+#    1. Shell-Optionen & History
 #    2. Aliases
 #    3. Navigation & Bookmarks
 #    4. Dateien & Archive
@@ -19,13 +26,34 @@
 
 
 # ─────────────────────────────────────────────
-#  1. History
+#  1. Shell-Optionen & History
 # ─────────────────────────────────────────────
+
+# Terminalgröße nach jedem Befehl aktualisieren (wichtig für tmux/screen)
+shopt -s checkwinsize
+
+# 256-Farben sicherstellen (tmux, vim, Syntax-Highlighting)
+export TERM='xterm-256color'
+
+# History
 HISTSIZE=10000
 HISTFILESIZE=20000
 HISTCONTROL=ignoreboth          # ignoredups + ignorespace
 shopt -s histappend             # append statt überschreiben
 PROMPT_COMMAND="history -a"     # nach jedem Befehl wegschreiben
+
+# Farbiger Prompt: user@host /pfad $
+if [ -x /usr/bin/tput ] && tput setaf 1 &>/dev/null; then
+    PS1='\[\033[01;31m\]\u\[\033[01;33m\]@\[\033[01;36m\]\h \[\033[01;33m\]\w \[\033[01;35m\]\$ \[\033[00m\]'
+else
+    PS1='\u@\h:\w\$ '
+fi
+
+# Fenstertitel in xterm/screen auf "user@host: /pfad" setzen
+case "$TERM" in
+    xterm*|rxvt*|screen*)
+        PS1="\[\e]0;\u@\h: \w\a\]$PS1" ;;
+esac
 
 
 # ─────────────────────────────────────────────
@@ -38,8 +66,29 @@ if command -v dircolors &>/dev/null; then
 fi
 alias ls='ls --color=auto'
 alias ll='ls -lAh --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 alias home='cd ~'
 alias update='sudo apt update && sudo apt upgrade -y'
+
+# Schnelle Verzeichnis-Navigation
+alias ..='cd ..'
+alias ....='cd ../..'
+alias ......='cd ../../..'
+
+# Systemd-Journal anzeigen: log [service]
+log() {
+    if command -v journalctl &>/dev/null; then
+        if [[ -n "$1" ]]; then
+            journalctl -u "$1" -n 50 -e
+        else
+            journalctl -n 50 -e
+        fi
+    else
+        echo "journalctl nicht verfügbar (nur Linux/systemd)." >&2
+    fi
+}
 
 # Python-Statistiken (exkl. .venv)
 alias getpyline="find . -path './.venv' -prune -o -name '*.py' -print0 | xargs -0 wc -l"
@@ -198,7 +247,7 @@ weather() {
 # ─────────────────────────────────────────────
 
 # Globale Git-Standardkonfiguration einrichten
-git-setup() {
+setup-git() {
     if ! command -v git &>/dev/null; then
         echo "Fehler: git ist nicht installiert." >&2
         return 1
@@ -460,6 +509,53 @@ sysinfo() {
     echo "────────────────────────────────────"
 }
 
+# Detaillierte CPU-Informationen (macOS & Linux inkl. Raspberry Pi)
+cpuinfo() {
+    echo "────────────────────────────────────"
+    printf "  %-16s %s\n" "Architektur:" "$(uname -m)"
+
+    if [[ -f /proc/cpuinfo ]]; then
+        # Linux (x86, ARM, Raspberry Pi)
+        local model threads cores freq cache
+        model=$(grep -m1 -iE '^model name\s*:' /proc/cpuinfo | cut -d: -f2 | xargs)
+        # Fallback für ARM / Raspberry Pi (kein 'model name'-Feld)
+        [[ -z "$model" ]] && model=$(grep -m1 'Hardware' /proc/cpuinfo | cut -d: -f2 | xargs)
+        threads=$(grep -c '^processor' /proc/cpuinfo)
+        cores=$(grep -m1 'cpu cores' /proc/cpuinfo | awk '{print $NF}')
+        [[ -z "$cores" ]] && cores=$threads
+        freq=$(grep -m1 'cpu MHz' /proc/cpuinfo | awk '{printf "%.0f", $NF}')
+        cache=$(grep -m1 'cache size' /proc/cpuinfo | cut -d: -f2 | xargs)
+
+        [[ -n "$model" ]] && printf "  %-16s %s\n"     "Modell:"   "$model"
+        printf                      "  %-16s %s\n"     "Kerne:"    "$cores"
+        printf                      "  %-16s %s\n"     "Threads:"  "$threads"
+        [[ -n "$freq" ]]  && printf "  %-16s %s MHz\n" "Frequenz:" "$freq"
+        [[ -n "$cache" ]] && printf "  %-16s %s\n"     "Cache:"    "$cache"
+
+    elif command -v sysctl &>/dev/null; then
+        # macOS (Intel & Apple Silicon)
+        local model cores threads freq cache
+        model=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)
+        cores=$(sysctl -n hw.physicalcpu 2>/dev/null)
+        threads=$(sysctl -n hw.logicalcpu 2>/dev/null)
+        freq=$(sysctl -n hw.cpufrequency 2>/dev/null)      # leer bei Apple Silicon
+        cache=$(sysctl -n hw.l3cachesize 2>/dev/null)
+
+        [[ -n "$model" ]]   && printf "  %-16s %s\n"     "Modell:"    "$model"
+        [[ -n "$cores" ]]   && printf "  %-16s %s\n"     "Kerne:"     "$cores"
+        [[ -n "$threads" ]] && printf "  %-16s %s\n"     "Threads:"   "$threads"
+        if [[ -n "$freq" && "$freq" -gt 0 ]]; then
+            printf "  %-16s %s MHz\n" "Frequenz:" "$((freq / 1000000))"
+        fi
+        if [[ -n "$cache" && "$cache" -gt 0 ]]; then
+            printf "  %-16s %s MB\n"  "Cache (L3):" "$((cache / 1048576))"
+        fi
+    else
+        echo "  Keine CPU-Informationen verfügbar." >&2
+    fi
+    echo "────────────────────────────────────"
+}
+
 # Festplattennutzung ohne tmpfs/overlay
 disk() {
     df -h | grep -vE '^tmpfs|^udev|^overlay|^shm'
@@ -568,6 +664,82 @@ md2man() {
         echo "md2man: kein gültiger Pfad: $target" >&2
         return 1
     fi
+}
+
+# Vim einrichten, Colorschemes laden und ~/.vimrc anlegen
+setup-vim() {
+    # Prüfen ob vim installiert ist
+    if ! command -v vim &>/dev/null; then
+        echo "Vim ist nicht installiert." >&2
+        if [[ "$(uname)" == "Darwin" ]]; then
+            echo "  Installation: brew install vim" >&2
+        else
+            echo "  Installation: sudo apt install vim" >&2
+        fi
+        return 1
+    fi
+    echo "Vim gefunden: $(vim --version | head -1)"
+    echo ""
+
+    # ~/.vimrc: Backup und Bestätigung falls bereits vorhanden
+    if [[ -f "$HOME/.vimrc" ]]; then
+        read -rp "~/.vimrc existiert bereits. Überschreiben? [j/N] " _ans
+        if [[ "${_ans,,}" != "j" ]]; then
+            echo "Abgebrochen."
+            return 0
+        fi
+        bak "$HOME/.vimrc"
+        echo "Backup angelegt: ~/.vimrc.bak.$(date +%F)"
+    fi
+
+    # ~/.vim/colors/ Verzeichnis sicherstellen
+    mkdir -p "$HOME/.vim/colors"
+
+    # Colorscheme: distinguished (wird in vimrc als Standard gesetzt)
+    echo "Lade Colorscheme: distinguished..."
+    if ! curl -fsSL \
+        "https://raw.githubusercontent.com/Lokaltog/vim-distinguished/develop/colors/distinguished.vim" \
+        -o "$HOME/.vim/colors/distinguished.vim"; then
+        echo "Fehler: distinguished.vim konnte nicht geladen werden." >&2
+        return 1
+    fi
+    echo "  -> distinguished.vim installiert"
+
+    # Colorscheme: solarized (optional, g:solarized_termcolors in vimrc gesetzt)
+    echo "Lade Colorscheme: solarized..."
+    if curl -fsSL \
+        "https://raw.githubusercontent.com/altercation/vim-colors-solarized/master/colors/solarized.vim" \
+        -o "$HOME/.vim/colors/solarized.vim"; then
+        echo "  -> solarized.vim installiert"
+    else
+        echo "  Warnung: solarized.vim konnte nicht geladen werden (optional)." >&2
+    fi
+
+    # ~/.vimrc schreiben
+    cat > "$HOME/.vimrc" << 'VIMRC'
+syntax enable
+
+if has('gui_running')
+    set background=light
+else
+    set background=dark
+endif
+
+let g:solarized_termcolors=256
+colorscheme distinguished
+
+set modeline
+set tabstop=8
+set expandtab
+set shiftwidth=4
+set softtabstop=4
+filetype indent on
+VIMRC
+
+    echo ""
+    echo "── Vim Setup abgeschlossen ────────────────"
+    echo "  ~/.vimrc          angelegt"
+    echo "  ~/.vim/colors/    distinguished, solarized"
 }
 
 
@@ -817,3 +989,15 @@ path() {
 reload() {
     source ~/.bashrc && echo ".bashrc neu geladen."
 }
+
+
+# ─────────────────────────────────────────────
+#  Bash Completion (Linux)
+# ─────────────────────────────────────────────
+if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+fi
