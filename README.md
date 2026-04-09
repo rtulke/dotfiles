@@ -219,6 +219,18 @@ Falls `HTTP_PROXY` oder `HTTPS_PROXY` bereits als Umgebungsvariable gesetzt sind
 
 Installierte coc-Extensions: `coc-pyright`, `coc-clangd`, `coc-yaml`, `coc-sh`, `coc-json`, `coc-perl`, `coc-solargraph`, `coc-docker`, `coc-markdownlint`, `coc-terraform`, `coc-go`, `coc-tsserver`, `coc-rust-analyzer`, `coc-explorer`
 
+**Dateibaum (coc-explorer):**
+
+```
+Space + e          Dateibaum öffnen / schließen (toggle)
+:CocCommand explorer   alternativ per Befehl
+```
+
+Nachträgliche Installation (falls coc bereits eingerichtet ist):
+```vim
+:CocInstall coc-explorer
+```
+
 **Filetype-spezifische Einstellungen** in der `~/.vimrc`:
 
 | Dateityp | Einstellung |
