@@ -185,11 +185,14 @@ bj logs           # springt zu /var/log/nginx
 | `md2man [pfad]` | Markdown-Datei(en) als Man-Page rendern (benötigt pandoc) |
 | `setup-vim` | Vim prüfen, Plugins installieren, Colorschemes laden und `~/.vimrc` anlegen |
 
-`setup-vim` richtet eine vollständige Vim-Umgebung ein. Beim Start wird gefragt:
+`setup-vim` richtet eine vollständige Vim-Umgebung ein. Zu Beginn werden folgende Fragen gestellt:
 
 ```
+Proxy-URL (leer = kein Proxy, z.B. http://proxy.example.com:3128):
 Code Completion aktivieren? (coc.nvim, benötigt Node.js/npm) [j/N]
 ```
+
+Falls `HTTP_PROXY` oder `HTTPS_PROXY` bereits als Umgebungsvariable gesetzt sind, wird der Proxy automatisch erkannt — ohne Nachfrage. Der Proxy gilt für `curl`, `git` und `npm` innerhalb der Funktion, ohne dauerhafte Änderungen an `~/.npmrc` oder `git config`.
 
 **Colorschemes** (nach `~/.vim/colors/`):
 - **distinguished** — aktives Colorscheme ([Lokaltog/vim-distinguished](https://github.com/Lokaltog/vim-distinguished))
@@ -212,8 +215,9 @@ Code Completion aktivieren? (coc.nvim, benötigt Node.js/npm) [j/N]
 | `K` | Hover-Dokumentation |
 | `gd` | Go to Definition |
 | `gr` | Referenzen anzeigen |
+| `Space` + `e` | Dateibaum (coc-explorer) öffnen/schließen |
 
-Installierte coc-Extensions: `coc-pyright`, `coc-clangd`, `coc-yaml`, `coc-sh`, `coc-json`, `coc-perl`, `coc-solargraph`, `coc-docker`, `coc-markdownlint`, `coc-terraform`, `coc-go`, `coc-tsserver`, `coc-rust-analyzer`
+Installierte coc-Extensions: `coc-pyright`, `coc-clangd`, `coc-yaml`, `coc-sh`, `coc-json`, `coc-perl`, `coc-solargraph`, `coc-docker`, `coc-markdownlint`, `coc-terraform`, `coc-go`, `coc-tsserver`, `coc-rust-analyzer`, `coc-explorer`
 
 **Filetype-spezifische Einstellungen** in der `~/.vimrc`:
 

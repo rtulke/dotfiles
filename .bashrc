@@ -681,6 +681,27 @@ setup-vim() {
     echo "Vim gefunden: $(vim --version | head -1)"
     echo ""
 
+    # ── Proxy-Erkennung ──────────────────────────
+    # curl, git und npm respektieren http_proxy / https_proxy automatisch
+    local _proxy=""
+    if [[ -n "${HTTP_PROXY:-}${http_proxy:-}${HTTPS_PROXY:-}${https_proxy:-}" ]]; then
+        _proxy="${HTTP_PROXY:-${http_proxy:-${HTTPS_PROXY:-${https_proxy:-}}}}"
+        echo "Proxy erkannt: $_proxy"
+    else
+        read -rp "Proxy-URL (leer = kein Proxy, z.B. http://proxy.example.com:3128): " _proxy
+        if [[ -n "$_proxy" ]]; then
+            export http_proxy="$_proxy"
+            export https_proxy="$_proxy"
+            export HTTP_PROXY="$_proxy"
+            export HTTPS_PROXY="$_proxy"
+            # npm ignoriert manchmal Systemvariablen – explizit für diese Session setzen
+            export npm_config_proxy="$_proxy"
+            export npm_config_https_proxy="$_proxy"
+            echo "Proxy gesetzt: $_proxy"
+        fi
+    fi
+    echo ""
+
     # Code Completion (coc.nvim) aktivieren?
     read -rp "Code Completion aktivieren? (coc.nvim, benötigt Node.js/npm) [j/N] " _coc
 
@@ -949,6 +970,9 @@ nnoremap <silent> K :call CocActionAsync('doHover')<CR>
 " Definition und Referenzen springen
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gr <Plug>(coc-references)
+
+" Dateibaum (coc-explorer) öffnen/schließen
+nmap <silent> <space>e :CocCommand explorer<CR>
 VIMRC_COC
     fi
 
@@ -960,7 +984,7 @@ VIMRC_COC
     # coc Extensions installieren
     if [[ "${_coc,,}" == "j" ]]; then
         echo "Installiere coc-Extensions..."
-        vim +"CocInstall -sync coc-pyright coc-clangd coc-yaml coc-sh coc-json coc-perl coc-solargraph coc-docker coc-markdownlint coc-terraform coc-go coc-tsserver coc-rust-analyzer" +qall 2>/dev/null
+        vim +"CocInstall -sync coc-pyright coc-clangd coc-yaml coc-sh coc-json coc-perl coc-solargraph coc-docker coc-markdownlint coc-terraform coc-go coc-tsserver coc-rust-analyzer coc-explorer" +qall 2>/dev/null
     fi
 
     local plugins="vim-polyglot, ale, lightline"
