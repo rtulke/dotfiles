@@ -674,6 +674,9 @@ setup-vim() {
     echo "Vim gefunden: $(vim --version | head -1)"
     echo ""
 
+    # Code Completion (coc.nvim) aktivieren?
+    read -r "_coc?Code Completion aktivieren? (coc.nvim, benötigt Node.js/npm) [j/N] "
+
     # ~/.vimrc: Backup und Bestätigung falls bereits vorhanden
     if [[ -f "$HOME/.vimrc" ]]; then
         read -r "_ans?~/.vimrc existiert bereits. Überschreiben? [j/N] "
@@ -683,6 +686,21 @@ setup-vim() {
         fi
         bak "$HOME/.vimrc"
         echo "Backup angelegt: ~/.vimrc.bak.$(date +%F)"
+    fi
+
+    # Node.js prüfen falls coc gewünscht
+    if [[ "${_coc:l}" == "j" ]]; then
+        if ! command -v node &>/dev/null; then
+            echo "Warnung: Node.js nicht gefunden – Code Completion wird übersprungen." >&2
+            if [[ "$(uname)" == "Darwin" ]]; then
+                echo "  Installation: brew install node" >&2
+            else
+                echo "  Installation: sudo apt install nodejs npm" >&2
+            fi
+            _coc="n"
+        else
+            echo "Node.js gefunden: $(node --version)"
+        fi
     fi
 
     # ~/.vim/colors/ Verzeichnis sicherstellen
@@ -708,10 +726,34 @@ setup-vim() {
         echo "  Warnung: solarized.vim konnte nicht geladen werden (optional)." >&2
     fi
 
-    # ~/.vimrc schreiben
-    cat > "$HOME/.vimrc" << 'VIMRC'
-syntax enable
+    # vim-plug Plugin-Manager herunterladen
+    echo "Lade vim-plug Plugin-Manager..."
+    if ! curl -fLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim"; then
+        echo "Fehler: vim-plug konnte nicht geladen werden." >&2
+        return 1
+    fi
+    echo "  -> vim-plug installiert"
 
+    # ── ~/.vimrc Teil 1: Basiseinstellungen + Filetype + Plug-Block ──
+    cat > "$HOME/.vimrc" << 'VIMRC_BASE'
+" ─────────────────────────────────────────────
+"  ~/.vimrc — Robert Tulke
+" ─────────────────────────────────────────────
+
+" ── Allgemein ────────────────────────────────
+syntax enable
+set encoding=utf-8
+set number
+set cursorline
+set scrolloff=5
+set wildmenu
+set showmatch
+set backspace=indent,eol,start
+set ruler
+set laststatus=2
+
+" ── Darstellung ──────────────────────────────
 if has('gui_running')
     set background=light
 else
@@ -721,18 +763,241 @@ endif
 let g:solarized_termcolors=256
 colorscheme distinguished
 
+" Tabs und trailing Whitespace sichtbar machen
+set list
+set listchars=tab:»·,trail:·
+
+" ── Suche ────────────────────────────────────
+set incsearch
+set hlsearch
+set ignorecase
+set smartcase
+
+" ── Einrückung (Standard) ────────────────────
 set modeline
 set tabstop=8
 set expandtab
 set shiftwidth=4
 set softtabstop=4
 filetype indent on
-VIMRC
+
+" ── Einrückung pro Dateityp ──────────────────
+" Python (PEP 8: 4 Leerzeichen, max. 79 Zeichen)
+autocmd FileType python setlocal shiftwidth=4 tabstop=4 softtabstop=4
+    \ expandtab colorcolumn=79
+
+" YAML / Ansible (2 Leerzeichen)
+autocmd FileType yaml setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" JSON (2 Leerzeichen, Anführungszeichen nicht verbergen)
+autocmd FileType json setlocal shiftwidth=2 tabstop=2 softtabstop=2
+    \ expandtab conceallevel=0
+
+" HTML / CSS (2 Leerzeichen)
+autocmd FileType html,css setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" C / C++ (4 Leerzeichen, C-Einrückung, 80-Zeichen-Spalte)
+autocmd FileType c,cpp setlocal shiftwidth=4 tabstop=4 softtabstop=4
+    \ expandtab cindent colorcolumn=80
+
+" Bash / Shell (4 Leerzeichen)
+autocmd FileType sh setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab
+
+" Config / INI-Dateien
+autocmd FileType conf,ini setlocal shiftwidth=4 tabstop=4
+
+" Perl (4 Leerzeichen)
+autocmd FileType perl setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab
+
+" Ruby (2 Leerzeichen, Community-Standard)
+autocmd FileType ruby setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Dockerfile (2 Leerzeichen)
+autocmd FileType dockerfile setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Makefile (echte Tabs erforderlich – make bricht sonst ab!)
+autocmd FileType make setlocal noexpandtab shiftwidth=4 tabstop=4
+
+" Markdown (Zeilenumbruch aktiviert)
+autocmd FileType markdown setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab wrap linebreak
+
+" Terraform / HCL (2 Leerzeichen)
+autocmd FileType terraform,hcl setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Go (Tabs, offizieller Standard von gofmt)
+autocmd FileType go setlocal noexpandtab shiftwidth=4 tabstop=4
+
+" SQL (2 Leerzeichen)
+autocmd FileType sql setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" XML (2 Leerzeichen)
+autocmd FileType xml setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Nginx-Konfiguration (4 Leerzeichen)
+autocmd FileType nginx setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab
+
+" JavaScript / TypeScript / JSX / TSX (2 Leerzeichen, Community-Standard)
+autocmd FileType javascript,typescript,javascriptreact,typescriptreact
+    \ setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Rust (4 Leerzeichen, 100-Zeichen-Spalte laut Style Guide)
+autocmd FileType rust setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab colorcolumn=100
+
+" TOML (2 Leerzeichen, z.B. Cargo.toml, pyproject.toml)
+autocmd FileType toml setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Jinja2 / Ansible-Templates (.j2, .jinja, .jinja2)
+autocmd FileType jinja,jinja2,htmljinja,htmljinja2
+    \ setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" Protocol Buffers / gRPC (.proto)
+autocmd FileType proto setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+
+" ── Plugins (vim-plug) ───────────────────────
+call plug#begin('~/.vim/plugged')
+
+" Syntax-Highlighting für viele Sprachen (inkl. Perl, Ruby, Ansible, ...)
+Plug 'sheerun/vim-polyglot'
+
+" Asynchrones Linting
+Plug 'dense-analysis/ale'
+
+" Statusleiste
+Plug 'itchyny/lightline.vim'
+VIMRC_BASE
+
+    # coc.nvim optional hinzufügen
+    if [[ "${_coc:l}" == "j" ]]; then
+        cat >> "$HOME/.vimrc" << 'VIMRC_COC_PLUG'
+
+" Code Completion via Language Server Protocol
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+VIMRC_COC_PLUG
+    fi
+
+    # ── ~/.vimrc Teil 2: ALE + Lightline ──
+    cat >> "$HOME/.vimrc" << 'VIMRC_ALE'
+
+call plug#end()
+
+" ── ALE Linting ──────────────────────────────
+let g:ale_linters = {
+\   'python':  ['flake8'],
+\   'sh':      ['shellcheck'],
+\   'yaml':    ['yamllint'],
+\   'c':       ['gcc'],
+\   'cpp':     ['gcc'],
+\   'json':    ['jsonlint'],
+\   'perl':        ['perl'],
+\   'ruby':        ['rubocop'],
+\   'dockerfile':  ['hadolint'],
+\   'markdown':    ['markdownlint'],
+\   'terraform':   ['tflint'],
+\   'go':          ['golangci-lint'],
+\   'sql':         ['sqlint'],
+\   'xml':         ['xmllint'],
+\   'javascript':  ['eslint'],
+\   'typescript':  ['eslint'],
+\   'rust':        ['cargo'],
+\   'proto':       ['buf'],
+\}
+let g:ale_sign_error   = '>>'
+let g:ale_sign_warning = '--'
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_insert_leave = 0
+
+" Fehler-Navigation: Ctrl+j / Ctrl+k
+nmap <C-j> <Plug>(ale_next_wrap)
+nmap <C-k> <Plug>(ale_previous_wrap)
+
+" ── Lightline ────────────────────────────────
+let g:lightline = { 'colorscheme': 'wombat' }
+set noshowmode
+VIMRC_ALE
+
+    # ── ~/.vimrc Teil 3: coc.nvim Konfiguration (optional) ──
+    if [[ "${_coc:l}" == "j" ]]; then
+        cat >> "$HOME/.vimrc" << 'VIMRC_COC'
+
+" ── coc.nvim Code Completion ─────────────────
+" Tab / Shift+Tab zur Navigation in der Vorschlagsliste
+inoremap <silent><expr> <TAB>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Enter bestätigt den ausgewählten Vorschlag
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+" K zeigt Hover-Dokumentation
+nnoremap <silent> K :call CocActionAsync('doHover')<CR>
+
+" Definition und Referenzen springen
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gr <Plug>(coc-references)
+VIMRC_COC
+    fi
+
+    # Plugins installieren
+    echo ""
+    echo "Installiere vim-Plugins (kann einen Moment dauern)..."
+    vim +PlugInstall +qall 2>/dev/null
+
+    # coc Extensions installieren
+    if [[ "${_coc:l}" == "j" ]]; then
+        echo "Installiere coc-Extensions..."
+        vim +"CocInstall -sync coc-pyright coc-clangd coc-yaml coc-sh coc-json coc-perl coc-solargraph coc-docker coc-markdownlint coc-terraform coc-go coc-tsserver coc-rust-analyzer" +qall 2>/dev/null
+    fi
+
+    local plugins="vim-polyglot, ale, lightline"
+    [[ "${_coc:l}" == "j" ]] && plugins="$plugins, coc.nvim"
 
     echo ""
     echo "── Vim Setup abgeschlossen ────────────────"
-    echo "  ~/.vimrc          angelegt"
-    echo "  ~/.vim/colors/    distinguished, solarized"
+    echo "  ~/.vimrc                 angelegt"
+    echo "  ~/.vim/colors/           distinguished, solarized"
+    echo "  ~/.vim/autoload/         vim-plug"
+    echo "  ~/.vim/plugged/          $plugins"
+    echo ""
+    echo "── Externe Linting-Tools (optional) ───────"
+    echo "  Python : pip install flake8"
+    echo "  Bash   : apt install shellcheck  /  brew install shellcheck"
+    echo "  YAML   : pip install yamllint"
+    echo "  JSON   : npm install -g jsonlint"
+    echo "  C/C++  : apt install gcc         /  brew install gcc"
+    echo "  Ruby   : gem install rubocop"
+    echo "  Perl   : cpanm Perl::Critic"
+    echo "  Docker : brew install hadolint  /  apt install hadolint"
+    echo "  MD     : npm install -g markdownlint-cli"
+    echo "  TF     : brew install tflint"
+    echo "  Go     : go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+    echo "  SQL    : gem install sqlint"
+    echo "  XML    : apt install libxml2-utils  /  vorinstalliert auf macOS"
+    echo "  JS/TS  : npm install -g eslint"
+    echo "  Rust   : rustup  (cargo kommt mit Standard-Installation)"
+    echo "  Proto  : brew install buf  /  apt install protobuf-compiler"
+    if [[ "${_coc:l}" == "j" ]]; then
+        echo ""
+        echo "── coc LSP-Server (optional) ───────────────"
+        echo "  Python : npm i -g pyright"
+        echo "  C/C++  : apt install clangd  /  brew install llvm"
+        echo "  Bash   : npm i -g bash-language-server"
+        echo "  Ruby   : gem install solargraph"
+        echo "  Perl   : cpanm Perl::LanguageServer"
+        echo "  Go     : via coc-go (automatisch, installiert gopls)"
+        echo "  JS/TS  : via coc-tsserver (automatisch)"
+        echo "  Rust   : rustup component add rust-analyzer"
+        echo "  Docker : via coc-docker (automatisch)"
+        echo "  YAML   : via coc-yaml (automatisch)"
+        echo "  JSON   : via coc-json (automatisch)"
+    fi
 }
 
 

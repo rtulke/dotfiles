@@ -183,11 +183,68 @@ bj logs           # springt zu /var/log/nginx
 | `jsonp [json]` | JSON pretty-print (Argument oder stdin) |
 | `cert <domain>` | TLS-Zertifikat einer Domain prüfen |
 | `md2man [pfad]` | Markdown-Datei(en) als Man-Page rendern (benötigt pandoc) |
-| `setup-vim` | Vim prüfen, Colorschemes laden und `~/.vimrc` anlegen |
+| `setup-vim` | Vim prüfen, Plugins installieren, Colorschemes laden und `~/.vimrc` anlegen |
 
-`setup-vim` lädt folgende Colorschemes nach `~/.vim/colors/`:
-- **distinguished** — aktives Colorscheme in der `~/.vimrc` ([Lokaltog/vim-distinguished](https://github.com/Lokaltog/vim-distinguished))
+`setup-vim` richtet eine vollständige Vim-Umgebung ein. Beim Start wird gefragt:
+
+```
+Code Completion aktivieren? (coc.nvim, benötigt Node.js/npm) [j/N]
+```
+
+**Colorschemes** (nach `~/.vim/colors/`):
+- **distinguished** — aktives Colorscheme ([Lokaltog/vim-distinguished](https://github.com/Lokaltog/vim-distinguished))
 - **solarized** — optional, `g:solarized_termcolors=256` ist bereits gesetzt ([altercation/vim-colors-solarized](https://github.com/altercation/vim-colors-solarized))
+
+**Plugin-Manager:** [vim-plug](https://github.com/junegunn/vim-plug) wird nach `~/.vim/autoload/plug.vim` installiert.
+
+**Plugins — immer** (via `vim +PlugInstall`):
+- [vim-polyglot](https://github.com/sheerun/vim-polyglot) — Syntax-Highlighting für viele Sprachen (inkl. Perl, Ruby, Ansible)
+- [ALE](https://github.com/dense-analysis/ale) — Asynchrones Linting, nur beim Speichern (`Ctrl+j`/`Ctrl+k` zur Fehlernavigation)
+- [lightline.vim](https://github.com/itchyny/lightline.vim) — Statusleiste
+
+**Plugin — optional** (nur wenn Code Completion mit `j` bestätigt, benötigt Node.js):
+- [coc.nvim](https://github.com/neoclide/coc.nvim) — LSP-basierte Code Completion wie in VSCode
+
+| Taste | Funktion (coc) |
+|---|---|
+| `Tab` / `Shift+Tab` | Vorschlag auswählen |
+| `Enter` | Vorschlag bestätigen |
+| `K` | Hover-Dokumentation |
+| `gd` | Go to Definition |
+| `gr` | Referenzen anzeigen |
+
+Installierte coc-Extensions: `coc-pyright`, `coc-clangd`, `coc-yaml`, `coc-sh`, `coc-json`, `coc-perl`, `coc-solargraph`, `coc-docker`, `coc-markdownlint`, `coc-terraform`, `coc-go`, `coc-tsserver`, `coc-rust-analyzer`
+
+**Filetype-spezifische Einstellungen** in der `~/.vimrc`:
+
+| Dateityp | Einstellung |
+|---|---|
+| Python | `shiftwidth=4`, `colorcolumn=79` (PEP 8) |
+| YAML / Ansible | `shiftwidth=2` |
+| JSON | `shiftwidth=2`, `conceallevel=0` |
+| HTML / CSS | `shiftwidth=2` |
+| C / C++ | `cindent`, `colorcolumn=80` |
+| Bash / Shell | `shiftwidth=4` |
+| conf / ini | `shiftwidth=4` |
+| Perl | `shiftwidth=4` |
+| Ruby | `shiftwidth=2` |
+| Dockerfile | `shiftwidth=2` |
+| Makefile | `noexpandtab` (echte Tabs — make-Pflicht!) |
+| Markdown | `shiftwidth=2`, `wrap`, `linebreak` |
+| Terraform / HCL | `shiftwidth=2` |
+| Go | `noexpandtab` (gofmt-Standard) |
+| SQL | `shiftwidth=2` |
+| XML | `shiftwidth=2` |
+| Nginx | `shiftwidth=4` |
+| JS / TS / JSX / TSX | `shiftwidth=2` |
+| Rust | `shiftwidth=4`, `colorcolumn=100` (Style Guide) |
+| TOML | `shiftwidth=2` |
+| Jinja2 / `.j2` | `shiftwidth=2` |
+| Protocol Buffers | `shiftwidth=2` |
+
+**ALE-Linter:** `flake8` (Python), `shellcheck` (Bash), `yamllint` (YAML), `gcc` (C/C++), `jsonlint` (JSON), `perl` (Perl), `rubocop` (Ruby), `hadolint` (Dockerfile), `markdownlint` (Markdown), `tflint` (Terraform), `golangci-lint` (Go), `sqlint` (SQL), `xmllint` (XML), `eslint` (JS/TS), `cargo` (Rust), `buf` (Proto)
+
+TOML und Jinja2 benötigen keinen externen Linter — vim-polyglot liefert Syntax-Highlighting.
 
 Falls eine bestehende `~/.vimrc` gefunden wird, wird vor dem Überschreiben ein Backup angelegt (`~/.vimrc.bak.DATUM`).
 
@@ -321,3 +378,28 @@ Folgende Tools werden von einzelnen Funktionen benötigt, sind aber nicht zwinge
 | `docker` | alle `d*`-Funktionen | docker.com |
 | `ansible` | alle `a*`-Funktionen | `apt install ansible` / `pip install ansible` |
 | `tmux` | alle `t*`-Funktionen | `apt install tmux` / `brew install tmux` |
+| `curl` | `setup-vim` (vim-plug + Colorschemes) | vorinstalliert |
+| `flake8` | ALE Python-Linting | `pip install flake8` |
+| `shellcheck` | ALE Shell-Linting | `apt install shellcheck` / `brew install shellcheck` |
+| `yamllint` | ALE YAML-Linting | `pip install yamllint` |
+| `jsonlint` | ALE JSON-Linting | `npm install -g jsonlint` |
+| `gcc` | ALE C/C++-Linting | `apt install build-essential` / `xcode-select --install` |
+| `rubocop` | ALE Ruby-Linting | `gem install rubocop` |
+| `Perl::Critic` | ALE Perl-Linting | `cpanm Perl::Critic` |
+| Node.js + npm | `setup-vim` (coc.nvim, optional) | `apt install nodejs npm` / `brew install node` |
+| `pyright` | coc Python-LSP | `npm i -g pyright` |
+| `clangd` | coc C/C++-LSP | `apt install clangd` / `brew install llvm` |
+| `bash-language-server` | coc Bash-LSP | `npm i -g bash-language-server` |
+| `solargraph` | coc Ruby-LSP | `gem install solargraph` |
+| `Perl::LanguageServer` | coc Perl-LSP | `cpanm Perl::LanguageServer` |
+| `hadolint` | ALE Dockerfile-Linting | `brew install hadolint` / `apt install hadolint` |
+| `markdownlint-cli` | ALE Markdown-Linting | `npm install -g markdownlint-cli` |
+| `tflint` | ALE Terraform-Linting | `brew install tflint` |
+| `golangci-lint` | ALE Go-Linting | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest` |
+| `sqlint` | ALE SQL-Linting | `gem install sqlint` |
+| `xmllint` | ALE XML-Linting | `apt install libxml2-utils` / vorinstalliert auf macOS |
+| `eslint` | ALE JS/TS-Linting | `npm install -g eslint` |
+| `gopls` | coc Go-LSP | via `coc-go` automatisch |
+| `typescript-language-server` | coc JS/TS-LSP | via `coc-tsserver` automatisch |
+| `rust-analyzer` | ALE + coc Rust-LSP | `rustup component add rust-analyzer` |
+| `buf` | ALE Proto-Linting | `brew install buf` / `apt install protobuf-compiler` |
